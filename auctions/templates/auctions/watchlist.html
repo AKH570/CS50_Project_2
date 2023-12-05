@@ -1,0 +1,23 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    <h2>Active Listings</h2>
+        <div class="row">
+            {% for auction in Auctions %}
+            <div class="col-md-3">
+                <div class="card card-product-grid" style="width: 16rem;">
+                    <img src="{{auction.imageLink}}" alt="{{ auction.title }}">
+                    <figcaption class="info-wrap">
+                        <a href="#" class="title">{{ auction.title }}</a>
+                        <div class="price mt-1">$ {{ auction.price }}</div> 
+                        <p>Details: {{auction.descriptions}}</p>
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'listing' auction.id %}" class="btn btn-success btn-lg mx-5">Details</a>
+                        </div>
+                       
+                    </figcaption>
+                </div>
+            </div> 
+            {% endfor %}
+        </div>  
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    <h2>Create Listing</h2>
+    <form action="" class="main_form pt-3 mx-5 " method="POST">
+      {% csrf_token %}
+        <!--
+        {% if messages %}
+           {% for message in messages %}
+           <p {% if message.tags %} class=" alert alert-{{message.tags}}"{% endif %}>{{ message}}</p>{% endfor %}
+           {% endif %} -->
+      
+         <div class="row form-group mt-3">
+            <div class="col-md-6">
+               <input class="form-control border border-success" placeholder="Title" type="text" name="title"> 
+            </div>
+         </div>
+           <div class="row form-group mt-3">
+            <div class="col-md-6">
+               <textarea class="form-control border border-success" placeholder="Descriptions" name="message"></textarea>
+            </div>
+         </div> 
+           <div class="row form-group mt-3">
+              <div class="col-md-6">
+                 <input class="form-control border border-success" placeholder="Image Link" type="text" name="image">                          
+             </div>
+           </div>
+             
+           <div class="row form-group mt-3">
+              <div class="col-md-6">
+                 <input class="form-control border border-success" placeholder="Price" type="number" name="price">                          
+              </div>
+           </div>
+           <div class="row form-group mt-3">
+            <div class="col-md-6">
+                <select class="form-control border border-success" name="category" id="category">
+                    <option selected>Choose from category</option>
+                    {% for category in categories %}
+                    <option value="{{category}}">{{category}}</option>
+                    {% endfor %}
+                  </select>                            
+            </div>
+         </div>
+            <div class="col-md-12">
+              <button class="btn btn-primary btn-lg btn-block col-3 mt-3 mx-5" type="submit">Submit</button>
+            </div>
+      </form>
+    
+{% endblock %}
