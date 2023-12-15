@@ -3,35 +3,82 @@ from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
-from .models import Category,auction_listing,Comments
+from .models import Category,Auction_listing,Comments,Bid
 from .models import User
+from django.contrib import messages
+from django.db import connection
 
 
 
 def Listing(request,id):
     try:
-        activeAuction = auction_listing.objects.get(pk=id)
+        activeAuction = Auction_listing.objects.get(pk=id)
         autionReviews = Comments.objects.filter(auctionName=activeAuction).order_by('-commentDate')
-        #print(f'this is all comments:{autionReviews}')
         isWatchListExist = request.user in activeAuction.watchlist.all()
+        NewBid = Bid.objects.get(bid_Name=activeAuction)
         return render(request, "auctions/listing.html",
                 {
                 'Auctions':activeAuction,
                 'isWatchListExist':isWatchListExist,
                 'reviews':autionReviews,
+                'newBid':NewBid,
                 })
-    
     except Exception as e:
        return HttpResponse('This item is not exist')
     
+def bidAuction(request,id):
+        PlaceBid = request.POST.get('new_bid') 
+        activeAuction = Auction_listing.objects.get(pk=id)
+        existinBid = Bid.objects.get(bid_Name=activeAuction)
+        autionReviews = Comments.objects.filter(auctionName=activeAuction).order_by('-commentDate')
+        if float(PlaceBid) > activeAuction.Price: 
+            if existinBid.bidPrice==0.0:
+                #this is update query of Bid model if no bid is present for a certain field
+                Bid.objects.filter(bid_Name=activeAuction).update(bidPrice=PlaceBid,bidderName=request.user)
+                UpdatedBid = Bid.objects.get(bid_Name=activeAuction)
 
-def Reviews(request,  id):
-        comment= request.POST['comment']
+                # 2nd option to update a db field
+                # newBid.bidderName=currentUser
+                messages.success(request,'New bid successfully updated') 
+                return render(request, "auctions/listing.html",
+                                    {
+                                    'Auctions':activeAuction,
+                                    'reviews':autionReviews,
+                                    'newBid':UpdatedBid,
+                                    }) 
+        
+            elif float(PlaceBid) > existinBid.bidPrice: 
+                messages.success(request,'Your bid successfully updated')      
+                Bid.objects.filter(bid_Name=activeAuction).update(bidPrice=PlaceBid,bidderName=request.user)
+                UpdatedBid = Bid.objects.get(bid_Name=activeAuction)
+                return render(request, "auctions/listing.html",{
+                    'Auctions':activeAuction,
+                    'reviews':autionReviews,
+                    'newBid':UpdatedBid,
+                })
+            elif existinBid.bidPrice > float(PlaceBid) > activeAuction.Price:
+                messages.error(request,'Your Bid is less than present price')
+                UpdatedBid = Bid.objects.get(bid_Name=activeAuction)
+                return render(request, "auctions/listing.html",{
+                    'Auctions':activeAuction,
+                    'reviews':autionReviews,
+                    'newBid':UpdatedBid,
+                })
+        else:
+             messages.error(request,'Your Bid is less than present price')
+             UpdatedBid = Bid.objects.get(bid_Name=activeAuction)
+             return render(request, "auctions/listing.html",{
+                'Auctions':activeAuction,
+                'reviews':autionReviews,
+                'newBid':UpdatedBid,
+            })
+def Reviews(request,id):
+        comment=request.POST['comment']
         user=request.user
-        activeAuction = auction_listing.objects.get(pk=id)
+        activeAuction = Auction_listing.objects.get(pk=id)
 
         newComment = Comments(
-            userName = user,
+            author = user,
             message = comment,
             auctionName=activeAuction
         )
@@ -40,39 +87,36 @@ def Reviews(request,  id):
         return HttpResponseRedirect(reverse(Listing,args=(id, )))
 
 def RemoveList(request,id):
-    activeAuction = auction_listing.objects.get(pk=id)
+    activeAuction = Auction_listing.objects.get(pk=id)
     activeAuction.watchlist.remove(request.user)
     return HttpResponseRedirect(reverse(Listing,args=(id, )))
 
 def AddList(request,id):
-    activeAuction = auction_listing.objects.get(pk=id)
+    activeAuction = Auction_listing.objects.get(pk=id)
     activeAuction.watchlist.add(request.user)
     return HttpResponseRedirect(reverse(Listing,args=(id, )))
 
 def watchList(request):
     #activeUser = request.user
     activeAuction= request.user.watchlist.all()
-    print(f'this is watchlist {activeAuction}')
     return render (request,'auctions/watchlist.html',
                    {'Auctions':activeAuction})
 
-def categoryItem(request,category_name):
-    try:
-        categoryName = Category.objects.get(category_name=category_name)
-        activeAuction = auction_listing.objects.filter(is_Available=True,category=categoryName)
-        categories = Category.objects.all()
-        return render(request, "auctions/index.html",
-                {
-                'Auctions':activeAuction,
-                'category':categories,
-                })
-    
-    except Exception as e:
-        return HttpResponse('This item is not exist')
-    
-
+def categoryItem(request,id):
+        try:
+            categoryName = Category.objects.get(pk=id)
+            categories = Category.objects.all()
+            activeAuction = Auction_listing.objects.filter(auctionCategory=categoryName)
+            return render(request, "auctions/index.html",
+                    {
+                    'Auctions':activeAuction,
+                    'category':categories,
+                    })
+        except Auction_listing.objects.get(auctionCategory=categoryName).DoesNotExist:
+             pass
+             
 def index(request):
-    activeAuction= auction_listing.objects.filter(is_Available=True)
+    activeAuction= Auction_listing.objects.filter(is_Available=True)
     categories = Category.objects.all()
     return render(request, "auctions/index.html",
                   {'Auctions':activeAuction,
@@ -86,17 +130,18 @@ def CreateListing(request):
         image = request.POST['image']
         price = request.POST['price']
         cat = request.POST['category']
-        user = request.user
+        aucOwner = request.user
 
         categoryItem= Category.objects.get(category_name=cat)
 
-        newList = auction_listing(
-            title=title,
+        newList = Auction_listing(
+            auctionTitle=title,
             descriptions=descriptions, 
-            imageLink= image,
-            price=price,
-            category = categoryItem,
-            user=user
+            auctionImageLink= image,
+            Price=price,
+            auctionCategory = categoryItem,
+            auctionOwner=aucOwner,
+            is_auctionOwner=True
             )
         newList.save()
 
