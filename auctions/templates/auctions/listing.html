@@ -26,23 +26,30 @@
                         <h2 class="title">Title: {{Auctions.auctionTitle}}</h2>
                         <div>
                           <h5 class="title  d-inline-flex text-muted">Auction Owner:<strong class="mx-2">{{Auctions.auctionOwner}}</strong></h5>
-                          <var class="price h5 text-muted mx-2">Starting Price: ${{Auctions.Price}}</var>
+                          <var class="price h5 text-muted mx-2">Starting Bid: ${{Auctions.Price}}</var>
                         </div>
                         <hr>
                           <var class="price h3">Bid Price: ${{newBid.bidPrice}}</var> 
                           <button class="btn btn-outline-primary float-end mx-2" type="button">Top bidder: {{newBid.bidderName}}</button>
                         <hr>
-                        <p><strong>Details: </strong> {{Auctions.descriptions}}</p> <hr>
+                        <p><strong>Descriptions: </strong> {{Auctions.descriptions}}</p> <hr>
 
                   {% if user.is_authenticated %}
-                      {% if user.is_auctionOwner %}
+                      {% if auctionOwner %}
                         <div class="mt-3">
-                          <form action="#" class="main_form" method="POST">
+                          <form action="{% url 'closeAuc' id=Auctions.id %}" class="main_form" method="POST">
                             {% csrf_token %}
                             <div class="input-group mb-3">
+                              {% if Auctions.is_Available %}
                               <div class="input-group-append">
-                                <button class="btn btn-success mx-2" type="submit">Auction Close</button>
+                                <p class="text-warning d-inline-flex"><strong>Do you like to close Auction?</strong> </p>
+                                <button class="btn btn-outline-info mx-2" type="submit">Submit</button>
                               </div>
+                              {% else %}
+                              <div class="input-group-append">
+                                <button class="btn btn-success mx-2" type="button">Auction Closed</button>
+                              </div>
+                              {% endif %}
                             </div>
                           </form>
                         </div>

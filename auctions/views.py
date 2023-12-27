@@ -3,29 +3,29 @@ from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
-from .models import Category,Auction_listing,Comments,Bid
+from .models import Category,Auction_listing,Comments,Bid,auctionWinner
 from .models import User
 from django.contrib import messages
-from django.db import connection
 
 
 
-def Listing(request,id):
-    try:
+def listingAuction(request,id):
         activeAuction = Auction_listing.objects.get(pk=id)
+        NewBid = Bid.objects.get(bid_Name=activeAuction)
         autionReviews = Comments.objects.filter(auctionName=activeAuction).order_by('-commentDate')
         isWatchListExist = request.user in activeAuction.watchlist.all()
-        NewBid = Bid.objects.get(bid_Name=activeAuction)
+        isOwner=activeAuction.auctionOwner==request.user
+        if activeAuction.is_Available==False and NewBid.bidderName==request.user:
+            messages.success(request,'Congratulations! You are winner of this auction')
         return render(request, "auctions/listing.html",
                 {
                 'Auctions':activeAuction,
                 'isWatchListExist':isWatchListExist,
                 'reviews':autionReviews,
                 'newBid':NewBid,
+                'auctionOwner':isOwner
                 })
-    except Exception as e:
-       return HttpResponse('This item is not exist')
-    
+   
 def bidAuction(request,id):
         PlaceBid = request.POST.get('new_bid') 
         activeAuction = Auction_listing.objects.get(pk=id)
@@ -72,6 +72,34 @@ def bidAuction(request,id):
                 'reviews':autionReviews,
                 'newBid':UpdatedBid,
             })
+
+def  closeAuction(request,id):
+        if request.method == 'POST':    
+            activeAuction = Auction_listing.objects.get(pk=id)
+            activeAuction.is_Available=False
+            activeAuction.save()
+            autionReviews = Comments.objects.filter(auctionName=activeAuction).order_by('-commentDate')
+            #isWatchListExist = request.user in activeAuction.watchlist.all()
+            isOwner=activeAuction.auctionOwner==request.user
+            NewBid = Bid.objects.get(bid_Name=activeAuction)
+            wonUsername=NewBid.bidderName
+            wonbidprice=NewBid.bidPrice
+            wininfo=auctionWinner(
+                    winAuction=activeAuction,
+                    winner=wonUsername,
+                    winBid=wonbidprice, )                      
+            wininfo.save()
+            messages.success(request,'Congratulations! Your auction is closed.')
+            return render(request, "auctions/listing.html",
+                    {
+                    'Auctions':activeAuction,
+                    #'isWatchListExist':isWatchListExist,
+                    'reviews':autionReviews,
+                    'newBid':NewBid,
+                    'auctionOwner':isOwner
+                    })
+        else:
+             return
 def Reviews(request,id):
         comment=request.POST['comment']
         user=request.user
@@ -84,17 +112,17 @@ def Reviews(request,id):
         )
         newComment.save()
 
-        return HttpResponseRedirect(reverse(Listing,args=(id, )))
+        return HttpResponseRedirect(reverse(listingAuction,args=(id, )))
 
 def RemoveList(request,id):
     activeAuction = Auction_listing.objects.get(pk=id)
     activeAuction.watchlist.remove(request.user)
-    return HttpResponseRedirect(reverse(Listing,args=(id, )))
+    return HttpResponseRedirect(reverse(listingAuction,args=(id, )))
 
 def AddList(request,id):
     activeAuction = Auction_listing.objects.get(pk=id)
     activeAuction.watchlist.add(request.user)
-    return HttpResponseRedirect(reverse(Listing,args=(id, )))
+    return HttpResponseRedirect(reverse(listingAuction,args=(id, )))
 
 def watchList(request):
     #activeUser = request.user
@@ -116,14 +144,14 @@ def categoryItem(request,id):
              pass
              
 def index(request):
-    activeAuction= Auction_listing.objects.filter(is_Available=True)
+    activeAuction= Auction_listing.objects.all()
     categories = Category.objects.all()
     return render(request, "auctions/index.html",
                   {'Auctions':activeAuction,
                    'category':categories })
 
 
-def CreateListing(request):
+def createAuction(request):
     if request.method =='POST':
         title = request.POST['title']
         descriptions = request.POST['message']

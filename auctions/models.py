@@ -34,10 +34,10 @@ class Comments(models.Model):
     auctionName = models.ForeignKey(Auction_listing,on_delete=models.CASCADE,blank=True)
     commentDate = models.DateTimeField(auto_now_add=True)
     def __str__(self):
-        return f'{self.userName}'
+        return f'{self.author}'
 
 class Bid(models.Model):
-    bid_Name=models.ForeignKey(Auction_listing,on_delete=models.CASCADE,blank=True,null=True,related_name='bidTitleName')
+    bid_Name=models.ForeignKey(Auction_listing,on_delete=models.CASCADE,blank=True,null=True)
     bidPrice = models.FloatField(default=0,blank=True,null=True)
     bidderName= models.ForeignKey(User,on_delete=models.CASCADE,blank=True,null=True)
    
@@ -45,3 +45,15 @@ class Bid(models.Model):
     def dollar_price(self):
         return "$%s" % self.bidPrice
 
+class auctionWinner(models.Model):
+    winAuction=models.CharField(max_length=200,blank=True,null=True)
+    winBid=models.FloatField(default=0,blank=True,null=True)
+    winner=models.ForeignKey(User,on_delete=models.CASCADE,blank=True,null=True)
+    WinningDate=models.DateTimeField(auto_now_add=True,blank=True,null=True)
+
+    def __str__(self):
+        return self.winAuction
+
+    @property
+    def dollar_price(self):
+        return "$%s" % self.winning_Bid
