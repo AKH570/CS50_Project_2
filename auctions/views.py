@@ -6,10 +6,12 @@ from django.urls import reverse
 from .models import Category,Auction_listing,Comments,Bid,auctionWinner
 from .models import User
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 
 
-
+@login_required
 def listingAuction(request,id):
+        login_view(request)
         activeAuction = Auction_listing.objects.get(pk=id)
         NewBid = Bid.objects.get(bid_Name=activeAuction)
         autionReviews = Comments.objects.filter(auctionName=activeAuction).order_by('-commentDate')
@@ -33,12 +35,9 @@ def bidAuction(request,id):
         autionReviews = Comments.objects.filter(auctionName=activeAuction).order_by('-commentDate')
         if float(PlaceBid) > activeAuction.Price: 
             if existinBid.bidPrice==0.0:
-                #this is update query of Bid model if no bid is present for a certain field
                 Bid.objects.filter(bid_Name=activeAuction).update(bidPrice=PlaceBid,bidderName=request.user)
                 UpdatedBid = Bid.objects.get(bid_Name=activeAuction)
 
-                # 2nd option to update a db field
-                # newBid.bidderName=currentUser
                 messages.success(request,'New bid successfully updated') 
                 return render(request, "auctions/listing.html",
                                     {
