@@ -1,0 +1,51 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+<h2>Active Listings</h2>
+<div class="dropdown m-3">
+    <button class="btn btn-success btn-lg dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Select Category
+    </button>
+    
+    <ul class="dropdown-menu">
+    <!-- {% if Auctions %} -->
+        {% for cat in category %}
+        <li><a class="dropdown-item bg-light" name="category" href="{% url 'cateitem' id=cat.id  %}">{{cat}}</a></li>
+        {% endfor %}
+    <!-- {% endif %} -->
+    </ul>
+   
+</div>
+
+<div class="row">
+{% if Auctions %}
+    {% for auction in Auctions %}
+    <div class="col-md-3">
+        <div class="card card-product-grid" style="width: 18rem;">
+            <img src="{{auction.auctionImageLink}}" alt="{{ auction.auctionTitle }}">
+            <figcaption class="info-wrap">
+                <a href="#" class="title">{{ auction.auctionTitle }}</a>
+                <div class="price mt-1">Starting Bid: {{ auction.dollar_price }}</div> 
+                <!-- <p>Details: {{auction.descriptions}}</p> -->
+                
+                <div class="mx-2 d-grid gap-5 d-inline-flex">
+                    
+                    <a href="{% url 'listing' id=auction.id %}" class="btn btn-outline-info">Details</a>
+                    {% if auction.is_Available is not True %}
+                    <button class="btn btn-outline-danger" type="button">Auction Closed</button>
+                    {% endif %}
+                </div>
+                
+                <!-- <div class="input-group-append d-inline-flex">
+                    
+                </div> -->
+            
+            </figcaption>
+        </div>
+    </div> 
+    {% endfor %}
+{% else %}
+    <h4>{{ message }}</h4>
+{% endif %}
+</div>  
+{% endblock %}

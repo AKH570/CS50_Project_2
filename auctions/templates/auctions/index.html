@@ -26,20 +26,15 @@
                     <figcaption class="info-wrap">
                         <a href="#" class="title">{{ auction.auctionTitle }}</a>
                         <div class="price mt-1">Starting Bid: {{ auction.dollar_price }}</div> 
-                        <!-- <p>Details: {{auction.descriptions}}</p> -->
+                        <p>Details: {{auction.descriptions}}</p>
                         
                         <div class="mx-2 d-grid gap-5 d-inline-flex">
                             
                             <a href="{% url 'listing' id=auction.id %}" class="btn btn-outline-info">Details</a>
-                            {% if auction.is_Available is not True %}
+                            <!-- {% if auction.is_Available is not True %}
                             <button class="btn btn-outline-danger" type="button">Auction Closed</button>
-                            {% endif %}
+                            {% endif %} -->
                         </div>
-                        
-                        <!-- <div class="input-group-append d-inline-flex">
-                            
-                        </div> -->
-                    
                     </figcaption>
                 </div>
             </div> 

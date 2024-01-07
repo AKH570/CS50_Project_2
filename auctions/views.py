@@ -9,16 +9,26 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
 
-@login_required
+def allListing(request):
+     activeAuction= Auction_listing.objects.all()
+     categories = Category.objects.all()
+     return render(request, "auctions/listingall.html",
+                  {'Auctions':activeAuction,
+                   'category':categories })
+
 def listingAuction(request,id):
         login_view(request)
         activeAuction = Auction_listing.objects.get(pk=id)
-        NewBid = Bid.objects.get(bid_Name=activeAuction)
+        # if new auction having no bid
+        try: 
+            NewBid = Bid.objects.get(bid_Name=activeAuction)
+        except Bid.DoesNotExist:
+             NewBid = Bid.objects.all()
         autionReviews = Comments.objects.filter(auctionName=activeAuction).order_by('-commentDate')
         isWatchListExist = request.user in activeAuction.watchlist.all()
         isOwner=activeAuction.auctionOwner==request.user
         if activeAuction.is_Available==False and NewBid.bidderName==request.user:
-            messages.success(request,'Congratulations! You are winner of this auction')
+                messages.success(request,'Congratulations! You are winner of this auction')
         return render(request, "auctions/listing.html",
                 {
                 'Auctions':activeAuction,
@@ -88,6 +98,8 @@ def  closeAuction(request,id):
                     winner=wonUsername,
                     winBid=wonbidprice, )                      
             wininfo.save()
+            activeAuction.auctionOwner=wininfo.winner
+            activeAuction.save()
             messages.success(request,'Congratulations! Your auction is closed.')
             return render(request, "auctions/listing.html",
                     {
@@ -133,7 +145,7 @@ def categoryItem(request,id):
         try:
             categoryName = Category.objects.get(pk=id)
             categories = Category.objects.all()
-            activeAuction = Auction_listing.objects.filter(auctionCategory=categoryName)
+            activeAuction = Auction_listing.objects.filter(auctionCategory=categoryName,is_Available=True)
             return render(request, "auctions/index.html",
                     {
                     'Auctions':activeAuction,
@@ -143,7 +155,7 @@ def categoryItem(request,id):
              pass
              
 def index(request):
-    activeAuction= Auction_listing.objects.all()
+    activeAuction= Auction_listing.objects.filter(is_Available=True)
     categories = Category.objects.all()
     return render(request, "auctions/index.html",
                   {'Auctions':activeAuction,
